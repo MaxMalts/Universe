@@ -5,10 +5,10 @@ from tkinter import *
 
 
 nParticles = 100
-particleVisualRad = 1
+particleVisualRad = 3
 
-gravityConstant = 10
-strongForceConstant = 30
+gravityConstant = 24
+strongForceConstant = 20
 strongForceRadConstant = 100
 
 
@@ -50,8 +50,13 @@ class Vector2:
         return Vector2(-self.x, -self.y)
 
 
-uniSize = Vector2(128000, 72000)
-visualScale = 0.01
+
+class Viewport:
+    pos = Vector2(0, 0)
+    size = Vector2(12800, 7200)
+    windowSize = Vector2(1280, 720)
+
+viewport = Viewport()
 
 
 
@@ -80,8 +85,12 @@ class Particle:
         self.mass = mass
 
         self.visualRad = visualRad
-        self.visualObj = space.create_oval(pos.x * visualScale - visualRad / 2, pos.y * visualScale - visualRad / 2, \
-            pos.x * visualScale + visualRad / 2, pos.y * visualScale + visualRad / 2, outline = "", fill = color)
+
+        windowPos = Vector2((self.pos.x - viewport.pos.x) * viewport.windowSize.x / viewport.size.x + viewport.windowSize.x / 2, \
+            (self.pos.y - viewport.pos.y) * viewport.windowSize.y / viewport.size.y + viewport.windowSize.y / 2)
+        
+        self.visualObj = space.create_oval(windowPos.x - self.visualRad / 2, windowPos.y - self.visualRad / 2, \
+            windowPos.x + self.visualRad / 2, windowPos.y + self.visualRad / 2, outline = "", fill = color)
     
     
     def AddForce(self, force):
@@ -104,9 +113,12 @@ class Particle:
         # elif(self.pos.y > uniSize.y):
         #     self.pos.y = 0
 
-        oldVisualCoords = self.space.coords(self.visualObj, \
-            self.pos.x * visualScale - self.visualRad / 2, self.pos.y * visualScale - self.visualRad / 2, \
-            self.pos.x * visualScale + self.visualRad / 2, self.pos.y * visualScale + self.visualRad / 2)
+        windowPos = Vector2((self.pos.x - viewport.pos.x) * viewport.windowSize.x / viewport.size.x + viewport.windowSize.x / 2, \
+            (self.pos.y - viewport.pos.y) * viewport.windowSize.y / viewport.size.y + viewport.windowSize.y / 2)
+        
+        self.space.coords(self.visualObj, \
+            windowPos.x - self.visualRad / 2, windowPos.y - self.visualRad / 2, \
+            windowPos.x + self.visualRad / 2, windowPos.y + self.visualRad / 2)
         #self.space.move(self.visualObj, self.pos.x - oldPos.x, self.pos.y - oldPos.y)
 
         self.force = Vector2(0, 0)
@@ -124,30 +136,52 @@ def StrongForce(particle1, particle2, distance):
 
 
 
-def VisualZoom(event):
-    global visualScale
+prevMousePos = None
+def ViewportDrag(event):
+    global prevMousePos
 
-    visualDelta = 1.2
-    if (event.delta < 0):
-        visualDelta **= -1
+    if (prevMousePos != None):
+        viewport.pos.x -= (event.x - prevMousePos.x) / viewport.windowSize.x * viewport.size.x
+        viewport.pos.y -= (event.y - prevMousePos.y) / viewport.windowSize.y * viewport.size.y
+
+    prevMousePos = Vector2(event.x, event.y)
+
+
+
+def MouseRelease(event):
+    global prevMousePos
+
+    prevMousePos = None
+
+
+def ViewportZoom(event):
+    global viewport
+
+    viewportDelta = 1.8 ** (-event.delta / 120)
     
-    visualScale *= visualDelta
+    viewport.size *= viewportDelta
 
-		
+    print(int(viewport.size.x / viewport.windowSize.x))
+
+
+
 root = Tk()
-space = Canvas(root, width = uniSize.x * visualScale, height = uniSize.y * visualScale, bg = "black")
+space = Canvas(root, width = viewport.windowSize.x, height = viewport.windowSize.y, bg = "black")
 space.pack()
 
-space.bind_all("<MouseWheel>", VisualZoom)
+space.bind_all("<MouseWheel>", ViewportZoom)
+space.bind_all("<B1-Motion>", ViewportDrag)
+space.bind_all("<ButtonRelease-1>", MouseRelease)
+
+
 
 particles = []
 for i in range(nParticles):
-    sideLen = int(math.sqrt(nParticles * 30)) 
-    pos = Vector2((uniSize.x - sideLen) / 2 + random.randint(0, sideLen), \
-        (uniSize.y - sideLen) / 2 + random.randint(0, sideLen))
+    sideLen = 54 #int(0.005 * nParticles ** 1.65)
+    pos = Vector2(random.randint(0, sideLen) - sideLen / 2, random.randint(0, sideLen) - sideLen / 2)
 
-    mass = random.randint(1, 3) * 2
-    massToColor = [None, "white", "white", "yellow", "yellow", "red", "red"]
+    massToColor = {1: "white", 20: "yellow", 80: "red"}
+    mass = random.choice(list(massToColor))
     # if (i == 1 or i == 2):
     #     particles.append(Particle(space, pos, Vector2(0, 0), random.randint(1, 3) * 1, particleVisualRad * 3, "yellow"))
     # else:
@@ -160,7 +194,9 @@ for i in range(nParticles):
 # particles[1].pos = Vector2(uniSize.x / 2 - 5000, uniSize.y / 2)
 # particles[1].vel = Vector2(0, 1)
 
-prevTime = time.clock()
+root.update()
+
+#prevTime = time.clock()
 while (True):
     for i in range(nParticles - 1):
         for j in range(i + 1, nParticles):
@@ -191,6 +227,6 @@ while (True):
     #while (time.clock() - prevTime < 0.1):
     #    continue
 
-    prevTime = time.clock()
+    #prevTime = time.clock()
     
     root.update()
