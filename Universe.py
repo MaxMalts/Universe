@@ -2,6 +2,7 @@ import math
 import random
 import time
 import sys
+import os
 from tkinter import *
 from Vector2 import Vector2
 from Viewport import Viewport
@@ -32,12 +33,17 @@ def StrongForce(particle1, particle2, distance):
 
 def StartUniverse(root, space, viewport, options):
     if (options.record):
-        recordFile = open(options.recordFName, "x")
+        if not os.path.exists(options.recordFName):
+            os.makedirs(os.path.dirname(options.recordFName))
+        else:
+            raise Exception("File " + options.recordFName + " already exists.")
+
+        recordFile = open(options.recordFName, "w")
         recordFile.write(str(Constants.nParticles) + '\n')
 
     particles = []
     for i in range(Constants.nParticles):
-        sideLen = int(0.005 * Constants.nParticles ** 1.65)
+        sideLen = Constants.initialAreaSize
         pos = Vector2(random.randint(0, sideLen) - sideLen / 2, random.randint(0, sideLen) - sideLen / 2)
 
         mass = random.choice(list(Constants.massToColor))

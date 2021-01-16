@@ -1,9 +1,9 @@
 class Options:
     record = False
-    recordFName = "Data.txt"
+    recordFName = "records/data.txt"
 
     play = False
-    playFName = "Data.txt"
+    playFName = "records/data.txt"
 
 
     def ParseCMD(self, argv):
@@ -12,10 +12,10 @@ class Options:
                 self.record = True
 
                 if (i + 1 < len(argv) and argv[i + 1][0] != '-'):
-                    self.recordFName = argv[i + 1]
+                    self.recordFName = "Records/" + argv[i + 1]
             
             elif (argv[i] == "--play"):
                 self.play = True
 
                 if (i + 1 < len(argv) and argv[i + 1][0] != '-'):
-                    self.playFName = argv[i + 1]
+                    self.playFName = "Records/" + argv[i + 1]
